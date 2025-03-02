@@ -18,7 +18,14 @@
     </configurations>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a2242bc1-fa04-49de-9c49-63247eef4357" name="Changes" comment="" />
+    <list default="true" id="a2242bc1-fa04-49de-9c49-63247eef4357" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/source/include/client.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/source/include/server.h" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/source/src/client.c" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/source/src/server.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/source/files.txt" beforeDir="false" afterPath="$PROJECT_DIR$/source/files.txt" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -59,6 +66,11 @@
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/source/include" />
+    </key>
+  </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
@@ -68,7 +80,7 @@
       <option name="presentableId" value="Default" />
       <updated>1740949593692</updated>
       <workItem from="1740949594742" duration="778000" />
-      <workItem from="1740950386980" duration="908000" />
+      <workItem from="1740950386980" duration="2097000" />
     </task>
     <servers />
   </component>
