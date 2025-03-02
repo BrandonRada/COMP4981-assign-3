@@ -7,4 +7,4 @@
 
 void communicate_with_server(int socket);
 
-#endif //CLIENT_H
+#endif    // CLIENT_H

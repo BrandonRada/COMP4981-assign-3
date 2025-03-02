@@ -6,4 +6,4 @@
 #define SERVER_H
 void handle_client(int client_socket);
 void execute_command(char *command, int client_socket);
-#endif //SERVER_H
+#endif    // SERVER_H
