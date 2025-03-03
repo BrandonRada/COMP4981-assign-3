@@ -21,9 +21,10 @@
 #define BUFFER_SIZE 1024
 #define FIVE 5
 #define TEN 10
+#define FIFTY 50
 #define ERROR_MESSAGE_SIZE 512
-// #define COMMAND_FILE "server_commands"
-
+#define BASE_DIR "/home/brandon-rada/COMP4981/COMP4981-assign-3/source"
+#define PATH_MAX 4096
 // Global variable for the server socket
 static int server_socket;    // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 // Flag to indicate server shutdown
@@ -165,10 +166,27 @@ void handle_client(int client_socket)
 
         buffer[strcspn(buffer, "\n")] = 0;    // Remove newline character
 
-        // Exit if the client sends "exit"
-        if(strcmp(buffer, "exit") == 0)
+        // Exit if the client sends "exit" with or without a number
+        if(strncmp(buffer, "exit", 4) == 0)
         {
-            printf("Client requested to exit.\n");
+            if(strlen(buffer) > FIVE)
+            {
+                char *endptr;
+                long  exit_value = strtol(buffer + FIVE, &endptr, TEN);
+
+                if(*endptr == '\0')    // No non-numeric characters after the number
+                {
+                    printf("Client has exited with value: %ld\n", exit_value);
+                }
+                else
+                {
+                    printf("Invalid exit value: %s\n", buffer + FIVE);
+                }
+            }
+            else
+            {
+                printf("Client has exited.\n");
+            }
             break;
         }
 
@@ -203,10 +221,19 @@ void execute_command(char *command, int client_socket)
     if(args[0] != NULL)
     {
         const char *message;
+        // Block restricted commands
+        if(strcmp(args[0], "nano") == 0 || strcmp(args[0], "touch") == 0 || strcmp(args[0], "mkdir") == 0)
+        {
+            message = "Error: Command not allowed\n";
+            write(client_socket, message, strlen(message));
+            return;
+        }
+
         if(strcmp(args[0], "exit") == 0)
         {
             // exit command, optionally with an exit status
-            int status = 0;
+            int  status = 0;
+            char exit_msg[FIFTY];
             if(args[1] != NULL)
             {
                 char *endptr;
@@ -222,31 +249,53 @@ void execute_command(char *command, int client_socket)
                     status = (int)result;    // Convert long to int if necessary
                 }
             }
+
+            snprintf(exit_msg, sizeof(exit_msg), "Exiting with status %d\n", status);
+            write(client_socket, exit_msg, strlen(exit_msg));
             exit(status);
         }
         else if(strcmp(args[0], "cd") == 0)
         {
-            // cd command to change directory
             if(args[1] != NULL)
             {
+                char new_path[PATH_MAX];    // Store absolute path after changing directories
+
                 // Attempt to change directory
                 if(chdir(args[1]) != 0)
                 {
-                    // If chdir fails, send an error message back to the client
                     char error_message[ERROR_MESSAGE_SIZE];
                     snprintf(error_message, sizeof(error_message), "cd: %s: %s\n", args[1], strerror(errno));
                     write(client_socket, error_message, strlen(error_message));
                 }
                 else
                 {
-                    // If chdir is successful, send a success message
-                    const char *success_message = "Directory changed successfully\n";
-                    write(client_socket, success_message, strlen(success_message));
+                    // Get the absolute path after chdir
+                    if(getcwd(new_path, sizeof(new_path)) == NULL)
+                    {
+                        perror("getcwd");
+                        exit(EXIT_FAILURE);
+                    }
+
+                    // Check if new_path is still inside BASE_DIR
+                    if(strncmp(new_path, BASE_DIR, strlen(BASE_DIR)) != 0)
+                    {
+                        const char *restricted_message;
+                        // If the user moved out of BASE_DIR, revert to BASE_DIR
+                        chdir(BASE_DIR);
+                        restricted_message = "cd: Cannot move outside the /source directory. Resetting to /source.\n";
+                        write(client_socket, restricted_message, strlen(restricted_message));
+                    }
+                    else
+                    {
+                        const char *success_message;
+                        success_message = "Directory changed successfully\n";
+                        write(client_socket, success_message, strlen(success_message));
+                    }
                 }
             }
             else
             {
-                // If no directory argument is provided
+                // Missing argument case
                 const char *missing_argument_message = "cd: missing argument\n";
                 write(client_socket, missing_argument_message, strlen(missing_argument_message));
             }
