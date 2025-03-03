@@ -18,6 +18,7 @@
 #define PORT 8080
 #define BUFFER_SIZE 1024
 #define FIVE 5
+// #define COMMAND_FILE "server_commands"
 
 // Global variable for the server socket
 static int server_socket;    // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
@@ -169,8 +170,8 @@ void handle_client(int client_socket)
 
         execute_command(buffer, client_socket);
     }
-
-    close(client_socket);    // Close the client socket when done
+    // Close the client socket when done
+    close(client_socket);
 }
 
 // Executes the command using execv()
