@@ -5,6 +5,8 @@
 
 #include "server.h"
 #include <arpa/inet.h>
+#include <errno.h>
+#include <fcntl.h>
 #include <signal.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -18,6 +20,8 @@
 #define PORT 8080
 #define BUFFER_SIZE 1024
 #define FIVE 5
+#define TEN 10
+#define ERROR_MESSAGE_SIZE 512
 // #define COMMAND_FILE "server_commands"
 
 // Global variable for the server socket
@@ -182,6 +186,7 @@ void execute_command(char *command, int client_socket)
     char *token;
     char *context;
     int   i = 0;
+
     pid_t pid;
     int   pipefd[2];
 
@@ -193,6 +198,106 @@ void execute_command(char *command, int client_socket)
         token     = strtok_r(NULL, " ", &context);    // Subsequent calls
     }
     args[i] = NULL;
+
+    // Handle built-in commands first
+    if(args[0] != NULL)
+    {
+        const char *message;
+        if(strcmp(args[0], "exit") == 0)
+        {
+            // exit command, optionally with an exit status
+            int status = 0;
+            if(args[1] != NULL)
+            {
+                char *endptr;
+                long  result = strtol(args[1], &endptr, TEN);
+
+                // Check for errors
+                if(*endptr != '\0')
+                {
+                    fprintf(stderr, "Error: Invalid integer '%s'\n", args[1]);
+                }
+                else
+                {
+                    status = (int)result;    // Convert long to int if necessary
+                }
+            }
+            exit(status);
+        }
+        else if(strcmp(args[0], "cd") == 0)
+        {
+            // cd command to change directory
+            if(args[1] != NULL)
+            {
+                // Attempt to change directory
+                if(chdir(args[1]) != 0)
+                {
+                    // If chdir fails, send an error message back to the client
+                    char error_message[ERROR_MESSAGE_SIZE];
+                    snprintf(error_message, sizeof(error_message), "cd: %s: %s\n", args[1], strerror(errno));
+                    write(client_socket, error_message, strlen(error_message));
+                }
+                else
+                {
+                    // If chdir is successful, send a success message
+                    const char *success_message = "Directory changed successfully\n";
+                    write(client_socket, success_message, strlen(success_message));
+                }
+            }
+            else
+            {
+                // If no directory argument is provided
+                const char *missing_argument_message = "cd: missing argument\n";
+                write(client_socket, missing_argument_message, strlen(missing_argument_message));
+            }
+            return;
+        }
+
+        else if(strcmp(args[0], "pwd") == 0)
+        {
+            // pwd command to print the current working directory
+            char cwd[BUFFER_SIZE];
+            if(getcwd(cwd, sizeof(cwd)) != NULL)
+            {
+                write(client_socket, cwd, strlen(cwd));
+                write(client_socket, "\n", 1);
+            }
+            else
+            {
+                perror("pwd");
+            }
+            return;
+        }
+        else if(strcmp(args[0], "echo") == 0)
+        {
+            // echo command to print text
+            for(int j = 1; args[j] != NULL; j++)
+            {
+                write(client_socket, args[j], strlen(args[j]));
+                if(args[j + 1] != NULL)
+                {
+                    write(client_socket, " ", 1);
+                }
+            }
+            write(client_socket, "\n", 1);
+            return;
+        }
+        else if(strcmp(args[0], "type") == 0)
+        {
+            // type command to display if command is built-in or external
+            if(args[1] != NULL && (strcmp(args[1], "exit") == 0 || strcmp(args[1], "cd") == 0 || strcmp(args[1], "pwd") == 0 || strcmp(args[1], "echo") == 0))
+            {
+                message = "Built-in command\n";
+                write(client_socket, message, strlen(message));
+            }
+            else
+            {
+                message = "External command\n";
+                write(client_socket, message, strlen(message));
+            }
+            return;
+        }
+    }
 
     // Construct full path for the command (assumes it's in /bin or /usr/bin)
     snprintf(full_command, sizeof(full_command), "/bin/%s", args[0]);
